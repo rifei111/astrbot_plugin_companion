@@ -369,6 +369,45 @@ class CompanionPlugin(Star):
             f"（预览，未发送）理由：{reason}\n{text or '（生成失败）'}"
         )
 
+    @filter.command("主动发")
+    async def cmd_force_send(self, event: AstrMessageEvent):
+        """/主动发 —— 立刻发一条，专门用来测平台侧到底允不允许主动消息。"""
+        state = self._ensure_session(event)
+        if state.umo in self._inflight or state.sending:
+            return event.plain_result("上一条还没发完，等几秒再试。")
+        text = await self._compose(state, "care")
+        if not text:
+            return event.plain_result("这句没生成出来，再试一次。")
+        sent = await delivery.deliver(
+            state.umo,
+            text,
+            self._send_text,
+            delivery.DeliveryConfig.from_config(self._cfg()),
+            self._rng,
+        )
+        if not sent:
+            return event.plain_result(
+                "没发出去。多半是平台侧拦下了（主动消息额度用尽、频控或内容审核），"
+                "具体原因在 AstrBot 日志里能看到适配器的原始报错。"
+            )
+        now = time.time()
+        today = datetime.now().strftime("%Y-%m-%d")
+        if state.count_date != today:
+            state.count_date = today
+            state.count_today = 0
+        state.count_today += 1
+        state.sent_total += 1
+        state.last_proactive_ts = now
+        state.unanswered += 1
+        for piece in sent:
+            state.add_recent("bot", piece, now)
+        state.touch(now, "bot")
+        self._record_decision(
+            state.umo, rules.Decision(True, "care", {"force": True}), True, text
+        )
+        self._save()
+        return event.plain_result(f"已发出 {len(sent)} 条：{text}")
+
     @filter.command("主动日志")
     async def cmd_log(self, event: AstrMessageEvent):
         """/主动日志 —— 看最近 5 条判定记录。"""
