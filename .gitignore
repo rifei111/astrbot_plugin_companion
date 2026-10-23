@@ -4,6 +4,7 @@ __pycache__/
 .venv/
 venv/
 data/
+.ruff_cache/
 .DS_Store
 *.log
 .pytest_cache/
