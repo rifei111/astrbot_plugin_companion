@@ -10,8 +10,8 @@ from __future__ import annotations
 import asyncio
 import math
 import random
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Awaitable, Callable
 
 from .composer import split_bubbles
 
@@ -27,7 +27,7 @@ class DeliveryConfig:
     bubbles_max: int = 3
 
     @classmethod
-    def from_config(cls, config: dict | None) -> "DeliveryConfig":
+    def from_config(cls, config: dict | None) -> DeliveryConfig:
         cfg = config or {}
 
         def _get(key, default):

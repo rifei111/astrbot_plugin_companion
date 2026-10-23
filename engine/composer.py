@@ -48,9 +48,11 @@ def pick_template(
     rng: random.Random | None = None,
 ) -> str:
     rng = rng or random.Random()
-    pool = (templates or DEFAULT_TEMPLATES).get(reason) or (templates or DEFAULT_TEMPLATES).get(
-        "fallback"
-    ) or DEFAULT_TEMPLATES["fallback"]
+    pool = (
+        (templates or DEFAULT_TEMPLATES).get(reason)
+        or (templates or DEFAULT_TEMPLATES).get("fallback")
+        or DEFAULT_TEMPLATES["fallback"]
+    )
     return rng.choice(list(pool))
 
 
@@ -60,7 +62,9 @@ def sanitize(text: str, max_chars: int = 120) -> str:
         return ""
     out = str(text).strip()
     # 去掉常见的"角色前缀"
-    out = re.sub(r"^(我|AI|助理|助手|Companion)\s*[:：]\s*", "", out, flags=re.IGNORECASE)
+    out = re.sub(
+        r"^(我|AI|助理|助手|Companion)\s*[:：]\s*", "", out, flags=re.IGNORECASE
+    )
     # 去掉整段包裹的引号
     out = out.strip("「」『』“”\"'` ")
     lines: list[str] = []
@@ -105,7 +109,9 @@ def split_bubbles(
     if max_bubbles <= 1 or len(text) <= 16 or rng.random() < 0.45:
         return [text]
 
-    pieces = [p.strip() for p in re.split(r"(?<=[。！？!?…~])|\n+", text) if p and p.strip()]
+    pieces = [
+        p.strip() for p in re.split(r"(?<=[。！？!?…~])|\n+", text) if p and p.strip()
+    ]
     if len(pieces) < 2:
         pieces = [p.strip() for p in re.split(r"[，,]\s*", text) if p.strip()]
     if len(pieces) < 2:
@@ -130,7 +136,7 @@ def _humanize_gap(seconds: float) -> str:
 
 def build_prompt(
     reason: str,
-    session: "SessionState",
+    session: SessionState,
     now_local: datetime,
     now_ts: float | None = None,
 ) -> str:
@@ -138,7 +144,11 @@ def build_prompt(
     now_ts = now_local.timestamp() if now_ts is None else now_ts
     stamp = now_local.strftime("%Y-%m-%d %H:%M")
     weekday = _WEEKDAYS[now_local.weekday()]
-    gap = _humanize_gap(now_ts - session.last_activity_ts) if session.last_activity_ts else "未知"
+    gap = (
+        _humanize_gap(now_ts - session.last_activity_ts)
+        if session.last_activity_ts
+        else "未知"
+    )
 
     lines = [
         "<context>",
@@ -158,7 +168,9 @@ def build_prompt(
     return "\n".join(lines)
 
 
-def build_recent_contexts(session: "SessionState", limit: int = 6) -> list[dict[str, Any]]:
+def build_recent_contexts(
+    session: SessionState, limit: int = 6
+) -> list[dict[str, Any]]:
     """把最近消息转成 provider 要的 contexts 格式。"""
     contexts: list[dict[str, Any]] = []
     for msg in session.recent[-limit:]:
@@ -170,7 +182,7 @@ def build_recent_contexts(session: "SessionState", limit: int = 6) -> list[dict[
 async def compose_llm(
     provider: Any,
     reason: str,
-    session: "SessionState",
+    session: SessionState,
     now_local: datetime,
     system_prompt: str = "",
     max_chars: int = 120,
@@ -187,7 +199,7 @@ async def compose_llm(
             contexts=build_recent_contexts(session),
             system_prompt=system,
         )
-    except Exception:
+    except Exception:  # noqa: BLE001 - 生成失败退回模板，不能让插件崩
         return ""
     text = getattr(resp, "completion_text", "") or ""
     return sanitize(text, max_chars=max_chars)

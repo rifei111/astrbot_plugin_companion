@@ -34,7 +34,7 @@ class StateStore:
             try:
                 getattr(logger, level)(message, *args)
                 return
-            except Exception:  # pragma: no cover - 日志本身不该让流程失败
+            except Exception:  # noqa: BLE001, S110 - 日志失败不能影响主流程
                 pass
 
     def load(self) -> tuple[dict[str, SessionState], list[dict]]:
@@ -49,7 +49,9 @@ class StateStore:
             return {}, []
 
         sessions: dict[str, SessionState] = {}
-        for item in (raw.get("sessions") or {}).values() if isinstance(raw, dict) else []:
+        for item in (
+            (raw.get("sessions") or {}).values() if isinstance(raw, dict) else []
+        ):
             if not isinstance(item, dict) or not item.get("umo"):
                 continue
             try:
@@ -60,7 +62,9 @@ class StateStore:
 
         decisions: list[dict] = []
         if isinstance(raw, dict) and isinstance(raw.get("decisions"), list):
-            decisions = [d for d in raw["decisions"] if isinstance(d, dict)][-MAX_DECISIONS:]
+            decisions = [d for d in raw["decisions"] if isinstance(d, dict)][
+                -MAX_DECISIONS:
+            ]
         return sessions, decisions
 
     def save(self, sessions: dict[str, SessionState], decisions: list[dict]) -> None:

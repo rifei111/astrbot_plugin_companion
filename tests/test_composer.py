@@ -50,7 +50,9 @@ class TestSanitize(unittest.TestCase):
 
 class TestSplitBubbles(unittest.TestCase):
     def test_short_text_not_split(self):
-        self.assertEqual(composer.split_bubbles("在忙吗？", max_bubbles=3), ["在忙吗？"])
+        self.assertEqual(
+            composer.split_bubbles("在忙吗？", max_bubbles=3), ["在忙吗？"]
+        )
 
     def test_long_text_can_split(self):
         text = "今天加班到好晚。感觉整个人都被掏空了。明天还得早起。"
@@ -70,7 +72,9 @@ class TestSplitBubbles(unittest.TestCase):
 class TestPickTemplate(unittest.TestCase):
     def test_uses_reason_pool(self):
         rng = random.Random(3)
-        text = composer.pick_template("night", {"night": ["还没睡啊"], "fallback": ["x"]}, rng)
+        text = composer.pick_template(
+            "night", {"night": ["还没睡啊"], "fallback": ["x"]}, rng
+        )
         self.assertEqual(text, "还没睡啊")
 
     def test_unknown_reason_falls_back(self):

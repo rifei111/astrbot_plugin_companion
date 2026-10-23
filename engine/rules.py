@@ -69,7 +69,7 @@ class RuleConfig:
     impulse_probability: float = 0.15
 
     @classmethod
-    def from_config(cls, config: dict[str, Any] | None) -> "RuleConfig":
+    def from_config(cls, config: dict[str, Any] | None) -> RuleConfig:
         cfg = config or {}
 
         def _get(key, default):
@@ -108,7 +108,7 @@ REASON_DESC = {
 
 
 def choose_reason(
-    session: "SessionState",
+    session: SessionState,
     local_dt: datetime,
     cfg: RuleConfig,
     rng: random.Random | None = None,
@@ -132,7 +132,7 @@ def choose_reason(
 def evaluate(
     now_ts: float,
     local_dt: datetime,
-    session: "SessionState",
+    session: SessionState,
     cfg: RuleConfig,
     rng: random.Random | None = None,
 ) -> Decision:
@@ -145,7 +145,9 @@ def evaluate(
         return Decision(False, "no_activity")
     if session.chat_type == "group" and not cfg.allow_group:
         return Decision(False, "group_not_allowed")
-    if in_quiet_hours(local_dt.hour * 60 + local_dt.minute, cfg.quiet_start, cfg.quiet_end):
+    if in_quiet_hours(
+        local_dt.hour * 60 + local_dt.minute, cfg.quiet_start, cfg.quiet_end
+    ):
         return Decision(False, "quiet_hours")
 
     today = local_day_key(local_dt)
@@ -159,15 +161,21 @@ def evaluate(
             return Decision(False, "min_interval", {"since_last_s": int(since_last)})
 
     if session.unanswered >= cfg.unanswered_stop:
-        return Decision(False, "unanswered_cooldown", {"unanswered": session.unanswered})
+        return Decision(
+            False, "unanswered_cooldown", {"unanswered": session.unanswered}
+        )
 
     idle_s = now_ts - session.last_activity_ts
-    need_s = cfg.idle_min_seconds * (cfg.backoff_factor ** session.unanswered)
+    need_s = cfg.idle_min_seconds * (cfg.backoff_factor**session.unanswered)
     if idle_s < need_s:
         return Decision(
             False,
             "waiting",
-            {"idle_s": int(idle_s), "need_s": int(need_s), "unanswered": session.unanswered},
+            {
+                "idle_s": int(idle_s),
+                "need_s": int(need_s),
+                "unanswered": session.unanswered,
+            },
         )
 
     if idle_s > cfg.active_window_hours * 3600:
@@ -185,5 +193,9 @@ def evaluate(
     return Decision(
         True,
         reason,
-        {"idle_s": int(idle_s), "sent_today": sent_today, "unanswered": session.unanswered},
+        {
+            "idle_s": int(idle_s),
+            "sent_today": sent_today,
+            "unanswered": session.unanswered,
+        },
     )

@@ -17,7 +17,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, MessageChain, filter
 from astrbot.api.star import Context, Star
 
@@ -41,7 +40,7 @@ def _default_data_dir() -> Path:
         from astrbot.core.utils.astrbot_path import get_astrbot_plugin_data_path
 
         base = Path(get_astrbot_plugin_data_path())
-    except Exception:  # pragma: no cover - 老版本没有这个函数
+    except Exception:  # noqa: BLE001 - 老版本 AstrBot 没有这个函数，退回插件目录
         base = Path(__file__).resolve().parent / "data"
     return base / PLUGIN_NAME
 
@@ -301,9 +300,7 @@ class CompanionPlugin(Star):
             else "还没发过"
         )
         reply_rate = (
-            f"{state.replied_total}/{state.sent_total}"
-            if state.sent_total
-            else "—"
+            f"{state.replied_total}/{state.sent_total}" if state.sent_total else "—"
         )
         on_off = "开" if state.enabled else "关"
         return (
@@ -329,8 +326,12 @@ class CompanionPlugin(Star):
     async def cmd_enable(self, event: AstrMessageEvent):
         """/主动开 —— 在本会话开启主动消息。"""
         state = self._ensure_session(event)
-        if state.chat_type == "group" and not bool(self._cfg().get("allow_group", False)):
-            return event.plain_result("群聊默认不开启主动消息（需要管理员在配置里打开 allow_group）。")
+        if state.chat_type == "group" and not bool(
+            self._cfg().get("allow_group", False)
+        ):
+            return event.plain_result(
+                "群聊默认不开启主动消息（需要管理员在配置里打开 allow_group）。"
+            )
         state.enabled = True
         if not state.last_activity_ts:
             state.touch(time.time(), "user")
@@ -377,7 +378,9 @@ class CompanionPlugin(Star):
             return event.plain_result("还没有判定记录。")
         lines = ["最近判定："]
         for record in records:
-            stamp = datetime.fromtimestamp(float(record.get("ts", 0))).strftime("%m-%d %H:%M")
+            stamp = datetime.fromtimestamp(float(record.get("ts", 0))).strftime(
+                "%m-%d %H:%M"
+            )
             flag = "发" if record.get("sent") else "未发"
             mark = " ✓" if record.get("replied") else ""
             lines.append(f"{stamp} [{flag}] {record.get('reason')}{mark}")

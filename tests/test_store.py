@@ -44,7 +44,7 @@ class TestStateStore(unittest.TestCase):
     def test_corrupt_file_is_backed_up(self):
         self.store.data_dir.mkdir(parents=True, exist_ok=True)
         self.store.path.write_text("{not json", encoding="utf-8")
-        sessions, decisions = self.store.load()
+        sessions, _decisions = self.store.load()
         self.assertEqual(sessions, {})
         self.assertTrue(list(self.store.data_dir.glob("state.corrupt-*.json")))
 

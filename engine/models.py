@@ -23,7 +23,7 @@ class RecentMessage:
         return {"role": self.role, "text": self.text, "ts": self.ts}
 
     @classmethod
-    def from_dict(cls, raw: dict) -> "RecentMessage":
+    def from_dict(cls, raw: dict) -> RecentMessage:
         return cls(
             role=str(raw.get("role", "user")),
             text=str(raw.get("text", ""))[:200],
@@ -95,7 +95,7 @@ class SessionState:
         }
 
     @classmethod
-    def from_dict(cls, raw: dict) -> "SessionState":
+    def from_dict(cls, raw: dict) -> SessionState:
         state = cls(
             umo=str(raw.get("umo", "")),
             chat_type=str(raw.get("chat_type", "private")),
@@ -108,7 +108,12 @@ class SessionState:
             replied_total=int(raw.get("replied_total", 0) or 0),
             created_ts=float(raw.get("created_ts", 0.0) or 0.0),
         )
-        for key in ("last_user_ts", "last_bot_ts", "last_activity_ts", "last_proactive_ts"):
+        for key in (
+            "last_user_ts",
+            "last_bot_ts",
+            "last_activity_ts",
+            "last_proactive_ts",
+        ):
             value = raw.get(key)
             setattr(state, key, float(value) if value is not None else None)
         recent = raw.get("recent") or []

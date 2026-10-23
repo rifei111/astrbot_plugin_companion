@@ -4,4 +4,4 @@
 Python，可以用 unittest 直接跑，方便把"什么时候该开口"这件事单独测干净。
 """
 
-__all__ = ["models", "rules", "store", "composer", "delivery"]
+__all__ = ["composer", "delivery", "models", "rules", "store"]

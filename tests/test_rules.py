@@ -99,7 +99,11 @@ class TestEvaluate(unittest.TestCase):
         state = make_session(unanswered=1)
         # 安静 5 分钟：正常情况下够了，但被无视一次后门槛翻倍到 8 分钟。
         decision = rules.evaluate(
-            1000.0 + 300, self.local, state, rules.RuleConfig(unanswered_stop=3), self.rng
+            1000.0 + 300,
+            self.local,
+            state,
+            rules.RuleConfig(unanswered_stop=3),
+            self.rng,
         )
         self.assertFalse(decision.act)
         self.assertEqual(decision.reason, "waiting")
