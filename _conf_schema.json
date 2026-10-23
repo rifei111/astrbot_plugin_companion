@@ -1,0 +1,121 @@
+{
+  "enabled": {
+    "type": "bool",
+    "description": "主动消息总开关",
+    "hint": "关掉之后所有会话都不再主动开口，但会话状态会保留。",
+    "default": true
+  },
+  "dry_run": {
+    "type": "bool",
+    "description": "影子模式（只判定、不发送）",
+    "hint": "打开后插件只在日志里记录本来会发什么，适合先观察一两天再正式开。",
+    "default": false
+  },
+  "use_llm": {
+    "type": "bool",
+    "description": "用模型生成内容",
+    "hint": "关掉之后只用内置模板，零 token 成本。",
+    "default": true
+  },
+  "provider_id": {
+    "type": "string",
+    "description": "指定 LLM Provider ID（留空用默认）",
+    "default": ""
+  },
+  "llm_system_prompt": {
+    "type": "text",
+    "description": "生成用的系统提示词（留空用内置的）",
+    "hint": "留空会用插件自带的口语化提示词；自己写的话建议保持短、口语、只说一句。",
+    "default": ""
+  },
+  "auto_enable_private": {
+    "type": "bool",
+    "description": "私聊自动开启",
+    "hint": "默认关闭：必须由用户发 /主动开 才会在该会话生效，避免打扰没同意的人。",
+    "default": false
+  },
+  "allow_group": {
+    "type": "bool",
+    "description": "允许在群聊里主动",
+    "default": false
+  },
+  "idle_min_seconds": {
+    "type": "int",
+    "description": "最少安静多久（秒）才可能开口",
+    "default": 240
+  },
+  "active_window_hours": {
+    "type": "float",
+    "description": "超过这么久没说话就不再开口（小时）",
+    "hint": "太久没互动还突然说话会很怪，默认 6 小时。",
+    "default": 6.0
+  },
+  "quiet_start": {
+    "type": "string",
+    "description": "静默开始时间（HH:MM）",
+    "default": "23:30"
+  },
+  "quiet_end": {
+    "type": "string",
+    "description": "静默结束时间（HH:MM）",
+    "default": "08:00"
+  },
+  "max_per_day": {
+    "type": "int",
+    "description": "每天最多主动几次",
+    "default": 2
+  },
+  "min_interval_minutes": {
+    "type": "int",
+    "description": "两次主动之间至少隔多少分钟",
+    "default": 90
+  },
+  "unanswered_stop": {
+    "type": "int",
+    "description": "连续几次没被回就不再开口",
+    "default": 2
+  },
+  "backoff_factor": {
+    "type": "float",
+    "description": "被无视后的退避倍数",
+    "hint": "每被无视一次，等待门槛乘以这个数（2.0 表示翻倍）。",
+    "default": 2.0
+  },
+  "tick_seconds": {
+    "type": "int",
+    "description": "检查间隔（秒）",
+    "default": 30
+  },
+  "delay_median_ms": {
+    "type": "int",
+    "description": "发送延迟中位数（毫秒）",
+    "default": 2600
+  },
+  "delay_sigma": {
+    "type": "float",
+    "description": "延迟离散度（对数正态 sigma）",
+    "hint": "越小越规律，越大越像人随机。0.55 大约以 1 至 6 秒为主。",
+    "default": 0.55
+  },
+  "delay_max_ms": {
+    "type": "int",
+    "description": "延迟上限（毫秒）",
+    "default": 15000
+  },
+  "bubbles_max": {
+    "type": "int",
+    "description": "最多拆成几条发送",
+    "default": 3
+  },
+  "impulse_probability": {
+    "type": "float",
+    "description": "无理由冲动概率",
+    "hint": "概率越高越像没什么事就是想找你说话，设 0 会关闭这类理由。",
+    "default": 0.15
+  },
+  "max_chars": {
+    "type": "int",
+    "description": "单条消息最长字数",
+    "default": 120
+  }
+}

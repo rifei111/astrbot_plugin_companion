@@ -1,0 +1,29 @@
+name: astrbot_plugin_companion
+display_name: 拟人主动 · Companion
+short_desc: 会等你一会儿、在合适的时候自己开口的主动消息插件
+desc: |
+  规则驱动的拟人主动消息（P0 版）。
+
+  - 安静一段时间后，才可能在合适的时刻主动说一句；
+  - 有静默时段、每天上限、最小间隔、被无视后自动退避；
+  - 延迟从对数正态分布采样、长句自动分条发，不做"秒回机器人"；
+  - 默认按会话单独开关（私聊要用户自己发 /主动开），群聊默认不打扰；
+  - 内容优先用当前 LLM Provider 生成，没有模型时退回内置模板；
+  - 支持影子模式：只判定不发送，先观察它挑的时机对不对。
+
+  这是"拟人主动时机"系列的第一版，规则部分刻意可解释，后续版本再引入 hazard 模型。
+version: 0.1.0
+author: rifei111
+repo: https://github.com/rifei111/astrbot_plugin_companion
+astrbot_version: ">=4.16,<5"
+support_platforms:
+  - aiocqhttp
+  - telegram
+  - discord
+  - slack
+  - kook
+  - lark
+tags:
+  - 主动消息
+  - 拟人
+  - 陪伴
