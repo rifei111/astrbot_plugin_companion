@@ -49,6 +49,25 @@ def in_quiet_hours(
     return minute_of_day >= s or minute_of_day < e
 
 
+def in_night_window(
+    minute_of_day: int,
+    quiet_start: str = "23:30",
+    window_minutes: int = 60,
+) -> bool:
+    """判断是否落在"深夜"窗口里：静默开始前的 window_minutes 分钟。
+
+    深夜理由和静默时段是一对：静默时段里一条都不发，所以"深夜想说话"只能发生
+    在静默开始之前那一段。把窗口从静默开始时间倒推出来，改 quiet_start 时这个
+    窗口会跟着走，不会像写死 23:00–02:00 那样被静默时段整个盖掉（那等于死代码）。
+    """
+    start = parse_hhmm(quiet_start, (23, 30))
+    window = max(1, int(window_minutes)) % (24 * 60)
+    begin = (start - window) % (24 * 60)
+    if begin < start:
+        return begin <= minute_of_day < start
+    return minute_of_day >= begin or minute_of_day < start
+
+
 def local_day_key(local_dt: datetime) -> str:
     return local_dt.strftime("%Y-%m-%d")
 
@@ -61,6 +80,7 @@ class RuleConfig:
     active_window_hours: float = 6.0
     quiet_start: str = "23:30"
     quiet_end: str = "08:00"
+    night_window_minutes: int = 60
     max_per_day: int = 2
     min_interval_minutes: int = 90
     unanswered_stop: int = 2
@@ -81,6 +101,7 @@ class RuleConfig:
             active_window_hours=float(_get("active_window_hours", 6.0)),
             quiet_start=str(_get("quiet_start", "23:30")),
             quiet_end=str(_get("quiet_end", "08:00")),
+            night_window_minutes=int(_get("night_window_minutes", 60)),
             max_per_day=int(_get("max_per_day", 2)),
             min_interval_minutes=int(_get("min_interval_minutes", 90)),
             unanswered_stop=int(_get("unanswered_stop", 2)),
@@ -115,7 +136,11 @@ def choose_reason(
 ) -> str:
     """挑一个开口理由。顺序有讲究：深夜 > 接话 > 冲动 > 普通关心。"""
     rng = rng or random.Random()
-    if local_dt.hour >= 23 or local_dt.hour < 2:
+    if in_night_window(
+        local_dt.hour * 60 + local_dt.minute,
+        cfg.quiet_start,
+        cfg.night_window_minutes,
+    ):
         return "night"
 
     last_user = next((m for m in reversed(session.recent) if m.role == "user"), None)

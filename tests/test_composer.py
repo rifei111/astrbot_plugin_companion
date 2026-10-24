@@ -81,6 +81,19 @@ class TestPickTemplate(unittest.TestCase):
         text = composer.pick_template("nope", {"fallback": ["兜底"]}, random.Random(0))
         self.assertEqual(text, "兜底")
 
+    def test_multiline_string_templates(self):
+        """配置面板里模板是"一行一句"的文本框，要能拆成列表。"""
+        templates = {"care": "在吗\n忙不忙\n", "fallback": ""}
+        picks = {
+            composer.pick_template("care", templates, random.Random(seed))
+            for seed in range(20)
+        }
+        self.assertEqual(picks, {"在吗", "忙不忙"})
+
+    def test_empty_templates_use_builtin(self):
+        text = composer.pick_template("care", {"care": ""}, random.Random(0))
+        self.assertIn(text, composer.DEFAULT_TEMPLATES["care"])
+
 
 class TestBuildPrompt(unittest.TestCase):
     def test_contains_context_and_recent(self):

@@ -58,6 +58,9 @@ class CompanionPlugin(Star):
         self._inflight: set[str] = set()
         self._tasks: set[asyncio.Task] = set()
         self._loop_task: asyncio.Task | None = None
+        # 消息事件里只置脏标记，真正写盘交给 tick 和 terminate。
+        # 每条消息都同步序列化 + fsync 会卡住事件循环，群一多整个 AstrBot 都变慢。
+        self._dirty = False
 
     # ------------------------------------------------------------------ 生命周期
 
@@ -102,13 +105,9 @@ class CompanionPlugin(Star):
         return state
 
     def _mark_replied(self, state: SessionState, now: float) -> None:
-        """用户回话时，把最近一次主动记成"被回应"。"""
-        if state.last_proactive_ts is None:
+        """用户回话时，把最近一次主动记成"被回应"，一条只记一次。"""
+        if not state.note_user_reply(now, REPLY_WINDOW_SECONDS):
             return
-        if now - state.last_proactive_ts > REPLY_WINDOW_SECONDS:
-            return
-        state.replied_total += 1
-        state.last_proactive_ts = state.last_proactive_ts  # 保留时间戳，只改计数
         for record in reversed(self._decisions[-20:]):
             if record.get("umo") == state.umo and record.get("sent"):
                 record["replied"] = True
@@ -125,8 +124,7 @@ class CompanionPlugin(Star):
                 self._mark_replied(state, now)
                 state.add_recent("user", text, now)
             state.touch(now, "user")
-            state.sent_total = state.sent_total  # 保持字段存在，避免旧状态缺少
-            self._save()
+            self._mark_dirty()
         except Exception:
             self.logger.exception("记录用户消息失败")
 
@@ -142,7 +140,7 @@ class CompanionPlugin(Star):
             now = time.time()
             state.add_recent("bot", text, now)
             state.touch(now, "bot")
-            self._save()
+            self._mark_dirty()
         except Exception:
             self.logger.exception("记录机器人回复失败")
 
@@ -151,8 +149,17 @@ class CompanionPlugin(Star):
     def _save(self) -> None:
         try:
             self._store.save(self._sessions, self._decisions)
+            self._dirty = False
         except Exception:
             self.logger.exception("保存状态失败")
+
+    def _mark_dirty(self) -> None:
+        """只置脏标记。消息进来时不写盘，交给 tick / terminate 统一落盘。"""
+        self._dirty = True
+
+    def _flush(self) -> None:
+        if self._dirty:
+            self._save()
 
     def _record_decision(
         self,
@@ -239,6 +246,7 @@ class CompanionPlugin(Star):
                 state.count_today += 1
                 state.sent_total += 1
                 state.last_proactive_ts = now
+                state.last_proactive_replied = False
                 state.unanswered += 1
                 for piece in sent:
                     state.add_recent("bot", piece, now)
@@ -259,6 +267,7 @@ class CompanionPlugin(Star):
                 interval = float(self._cfg().get("tick_seconds", 30) or 30)
                 await asyncio.sleep(max(5.0, interval))
                 await self._tick_once()
+                self._flush()
             except asyncio.CancelledError:
                 return
             except Exception:
@@ -295,7 +304,7 @@ class CompanionPlugin(Star):
         today = datetime.now().strftime("%Y-%m-%d")
         sent_today = state.count_today if state.count_date == today else 0
         last = (
-            composer._humanize_gap(now - state.last_proactive_ts)
+            composer.humanize_gap(now - state.last_proactive_ts)
             if state.last_proactive_ts
             else "还没发过"
         )

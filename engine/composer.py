@@ -42,18 +42,31 @@ _REASON_LINE = {
 }
 
 
+def _as_list(value: Any) -> list[str]:
+    """配置里的模板可以是列表，也可以是"一行一句"的文本框，统一成列表。"""
+    if value is None:
+        return []
+    if isinstance(value, str):
+        items = [line.strip() for line in value.splitlines()]
+    elif isinstance(value, (list, tuple)):
+        items = [str(item).strip() for item in value]
+    else:
+        return []
+    return [item for item in items if item]
+
+
 def pick_template(
     reason: str,
-    templates: dict[str, list[str]] | None = None,
+    templates: dict[str, Any] | None = None,
     rng: random.Random | None = None,
 ) -> str:
     rng = rng or random.Random()
-    pool = (
-        (templates or DEFAULT_TEMPLATES).get(reason)
-        or (templates or DEFAULT_TEMPLATES).get("fallback")
-        or DEFAULT_TEMPLATES["fallback"]
-    )
-    return rng.choice(list(pool))
+    pools = templates or {}
+    for key in (reason, "fallback"):
+        items = _as_list(pools.get(key))
+        if items:
+            return rng.choice(items)
+    return rng.choice(DEFAULT_TEMPLATES.get(reason) or DEFAULT_TEMPLATES["fallback"])
 
 
 def sanitize(text: str, max_chars: int = 120) -> str:
@@ -123,7 +136,7 @@ def split_bubbles(
     return [p for p in pieces if p]
 
 
-def _humanize_gap(seconds: float) -> str:
+def humanize_gap(seconds: float) -> str:
     seconds = max(0.0, float(seconds))
     if seconds < 60:
         return "刚刚"
@@ -145,7 +158,7 @@ def build_prompt(
     stamp = now_local.strftime("%Y-%m-%d %H:%M")
     weekday = _WEEKDAYS[now_local.weekday()]
     gap = (
-        _humanize_gap(now_ts - session.last_activity_ts)
+        humanize_gap(now_ts - session.last_activity_ts)
         if session.last_activity_ts
         else "未知"
     )

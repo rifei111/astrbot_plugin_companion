@@ -60,6 +60,12 @@
     "description": "静默结束时间（HH:MM）",
     "default": "08:00"
   },
+  "night_window_minutes": {
+    "type": "int",
+    "description": "深夜窗口（静默开始前多少分钟）",
+    "hint": "深夜理由只在这个窗口里出现，默认取静默开始前的 60 分钟。改了静默开始时间，窗口会自动跟着走。",
+    "default": 60
+  },
   "max_per_day": {
     "type": "int",
     "description": "每天最多主动几次",
@@ -117,5 +123,38 @@
     "type": "int",
     "description": "单条消息最长字数",
     "default": 120
+  },
+  "templates": {
+    "type": "object",
+    "description": "自定义模板（每行一句，留空用内置）",
+    "hint": "关掉 use_llm、或者模型调用失败时会用这些句子，随机挑一句发。每行一句，不用加引号。",
+    "default": {},
+    "items": {
+      "care": {
+        "type": "text",
+        "description": "普通的关心",
+        "default": ""
+      },
+      "followup": {
+        "type": "text",
+        "description": "接着上一轮话题",
+        "default": ""
+      },
+      "impulse": {
+        "type": "text",
+        "description": "无理由冲动",
+        "default": ""
+      },
+      "night": {
+        "type": "text",
+        "description": "深夜",
+        "default": ""
+      },
+      "fallback": {
+        "type": "text",
+        "description": "兜底",
+        "default": ""
+      }
+    }
   }
 }

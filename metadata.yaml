@@ -12,7 +12,7 @@ desc: |
   - 支持影子模式：只判定不发送，先观察它挑的时机对不对。
 
   这是"拟人主动时机"系列的第一版，规则部分刻意可解释，后续版本再引入 hazard 模型。
-version: 0.1.0
+version: 0.1.1
 author: rifei111
 repo: https://github.com/rifei111/astrbot_plugin_companion
 astrbot_version: ">=4.16,<5"

@@ -127,13 +127,31 @@ class TestEvaluate(unittest.TestCase):
         self.assertIn(decision.reason, {"care", "followup", "impulse", "night"})
         self.assertGreater(decision.explain["idle_s"], 0)
 
-    def test_night_reason_at_late_hour(self):
+    def test_night_reason_before_quiet_hours(self):
+        """深夜窗口现在从静默开始时间倒推：默认是 22:30–23:30。"""
+        state = make_session()
+        local = datetime(2026, 10, 23, 23, 0)
+        decision = rules.evaluate(self.now, local, state, self.cfg, self.rng)
+        self.assertEqual(decision.reason, "night")
+
+    def test_night_window_follows_quiet_start(self):
+        """静默开始改到 22:00，深夜窗口就变成 21:00–22:00，不会留在旧位置。"""
+        state = make_session()
+        cfg = rules.RuleConfig(quiet_start="22:00", quiet_end="07:00")
+        local = datetime(2026, 10, 23, 21, 30)
+        self.assertEqual(rules.choose_reason(state, local, cfg, self.rng), "night")
+        local_late = datetime(2026, 10, 23, 23, 0)
+        self.assertNotEqual(
+            rules.choose_reason(state, local_late, cfg, self.rng), "night"
+        )
+
+    def test_night_reason_never_inside_quiet_hours(self):
+        """静默时段里直接不判定，深夜理由不会和静默打架。"""
         state = make_session()
         local = datetime(2026, 10, 23, 1, 0)
-        # 默认静默时段覆盖凌晨，这里单独关掉它，才能测到"深夜开口理由"。
-        cfg = rules.RuleConfig(quiet_start="00:00", quiet_end="00:00")
-        decision = rules.evaluate(self.now, local, state, cfg, self.rng)
-        self.assertEqual(decision.reason, "night")
+        decision = rules.evaluate(self.now, local, state, self.cfg, self.rng)
+        self.assertFalse(decision.act)
+        self.assertEqual(decision.reason, "quiet_hours")
 
     def test_followup_reason_on_question(self):
         state = make_session()

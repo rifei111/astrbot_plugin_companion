@@ -49,6 +49,9 @@ class SessionState:
     count_date: str = ""
     count_today: int = 0
     last_proactive_ts: float | None = None
+    # 最近一次主动消息是否已经被回应过。用来把"一条主动消息"只记一次回应，
+    # 否则用户连回三条会把 replied_total 记成 3，回应率能超过 100%。
+    last_proactive_replied: bool = False
     # 连续发了主动消息、用户一直没回的次数，用来做退避和冷却。
     unanswered: int = 0
     sent_total: int = 0
@@ -75,6 +78,20 @@ class SessionState:
             self.last_bot_ts = ts
         self.last_activity_ts = ts
 
+    def note_user_reply(self, now: float, window_seconds: float) -> bool:
+        """用户说话了：只有"对最近一次主动消息的第一次回应"才算数。
+
+        返回 True 表示这次是新记的一笔回应，False 表示要么没有待回应的主动消息、
+        要么已经记过了、要么已经超过回应窗口。
+        """
+        if self.last_proactive_ts is None or self.last_proactive_replied:
+            return False
+        if now - self.last_proactive_ts > window_seconds:
+            return False
+        self.last_proactive_replied = True
+        self.replied_total += 1
+        return True
+
     def to_dict(self) -> dict:
         return {
             "umo": self.umo,
@@ -88,6 +105,7 @@ class SessionState:
             "count_date": self.count_date,
             "count_today": self.count_today,
             "last_proactive_ts": self.last_proactive_ts,
+            "last_proactive_replied": self.last_proactive_replied,
             "unanswered": self.unanswered,
             "sent_total": self.sent_total,
             "replied_total": self.replied_total,
@@ -106,6 +124,7 @@ class SessionState:
             unanswered=int(raw.get("unanswered", 0) or 0),
             sent_total=int(raw.get("sent_total", 0) or 0),
             replied_total=int(raw.get("replied_total", 0) or 0),
+            last_proactive_replied=bool(raw.get("last_proactive_replied", False)),
             created_ts=float(raw.get("created_ts", 0.0) or 0.0),
         )
         for key in (
